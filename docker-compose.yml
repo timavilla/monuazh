@@ -1,0 +1,46 @@
+version: '3'
+services:
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+    - .env
+
+  transactions:
+    build:
+      context: ./transactions
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    env_file:
+    - .env
+
+  postgres:
+    image: postgres:latest
+    hostname: pg_db
+    env_file:
+      - .env
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/data/db
+
+volumes:
+  postgres_data:
